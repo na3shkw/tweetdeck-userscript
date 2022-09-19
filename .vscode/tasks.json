@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "gulp",
+			"task": "default",
+			"problemMatcher": [],
+			"label": "gulp: default"
+		},
+		{
+			"type": "gulp",
+			"task": "watch",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "gulp: watch"
+		},
+		{
+			"type": "gulp",
+			"task": "loader",
+			"problemMatcher": [],
+			"label": "gulp: loader"
+		}
+	]
+}
