@@ -1,13 +1,12 @@
 {
   "name": "tweetdeck-userscript",
   "scriptName": "TweetDeck Custom",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TweetDeckをカスタマイズするユーザースクリプト",
   "main": "index.ts",
   "scripts": {
     "build": "gulp",
     "watch": "gulp watch",
-    "prod": "gulp prod",
     "loader": "gulp loader",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,8 +1,13 @@
+import { elem } from '../utils/dom';
+import { clamp } from '../utils/math';
+
 export class Clock {
     private clockSize = 200;
     private color = '#355070';
     private bigHandRatio = 0.8;
     private shortHandRatio = 0.6;
+    private draggingOverlayId = 'clock-dragging-overlay';
+    private positionStoreKeyPrefix = 'clockPosition';
 
     private container: HTMLElement | null = null;
     private bigHand: HTMLElement | null = null;
@@ -22,10 +27,10 @@ export class Clock {
                 height: ${this.clockSize}px;
                 background-color: white;
                 border: solid 3px ${this.color};
-                border-radius: ${this.clockSize / 2}px;
+                border-radius: ${clockSizeHalf}px;
                 position: fixed;
-                top: 30px;
-                right: 30px;
+                top: 0;
+                left: 0;
                 z-index: 200;
                 opacity: 0.8;
                 transition: opacity 0.2s ease 0s;
@@ -34,7 +39,13 @@ export class Clock {
                 opacity: 0.1;
                 cursor: move;
             }
-            .clock.drag {
+            .clock-dragging-overlay {
+                position: fixed;
+                width: 100vw;
+                height: 100vh;
+                top: 0;
+                left: 0;
+                z-index: 150;
                 cursor: move;
             }
             .clock-dial {
@@ -83,6 +94,10 @@ export class Clock {
         if (this.container) {
             this.container.addEventListener('mousedown', this, false);
         }
+        // 初期位置設定
+        this.translate.x = GM_getValue(`${this.positionStoreKeyPrefix}X`) || 0;
+        this.translate.y = GM_getValue(`${this.positionStoreKeyPrefix}Y`) || 0;
+        this.setClockPosition(this.translate.x, this.translate.y);
     }
 
     handleEvent(evt: MouseEvent) {
@@ -94,7 +109,6 @@ export class Clock {
                 this.dragMove(evt);
                 break;
             case 'mouseup':
-            case 'mouseleave':
                 this.endMove();
                 break;
         }
@@ -139,13 +153,25 @@ export class Clock {
         }
     }
 
+    setClockPosition(x: number, y: number) {
+        if (!this.container) {
+            return;
+        }
+        const translateX = clamp(x, 0, window.innerWidth - this.clockSize);
+        const translateY = clamp(y, 0, window.innerHeight - this.clockSize);
+        this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+    }
+
     startMove(evt: MouseEvent) {
         if (!this.evtOnMoveStart && this.container) {
             this.evtOnMoveStart = evt;
-            this.container.classList.add('drag');
-            this.container.addEventListener('mousemove', this, false);
-            this.container.addEventListener('mouseup', this, false);
-            this.container.addEventListener('mouseleave', this, false);
+            document.addEventListener('mousemove', this, false);
+            document.addEventListener('mouseup', this, false);
+            // オーバーレイを追加
+            const overlay = document.createElement('div');
+            overlay.id = this.draggingOverlayId;
+            overlay.className = 'clock-dragging-overlay';
+            document.body.appendChild(overlay);
         }
     }
 
@@ -160,9 +186,10 @@ export class Clock {
             this.dragMoveTiemoutId = null;
             this.moveDelta.x = evt.clientX - this.evtOnMoveStart?.clientX;
             this.moveDelta.y = evt.clientY - this.evtOnMoveStart?.clientY;
-            const translateX = this.translate.x + this.moveDelta.x;
-            const translateY = this.translate.y + this.moveDelta.y;
-            this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+            this.setClockPosition(
+                this.translate.x + this.moveDelta.x,
+                this.translate.y + this.moveDelta.y
+            );
         }, 10);
     }
 
@@ -170,12 +197,16 @@ export class Clock {
         if (!this.container) {
             return;
         }
-        this.container.classList.remove('drag');
         this.container.removeEventListener('mousemove', this, false);
         this.translate.x += this.moveDelta.x;
         this.translate.y += this.moveDelta.y;
         this.moveDelta.x = 0;
         this.moveDelta.y = 0;
         this.evtOnMoveStart = null;
+        // 位置を保存
+        GM_setValue(`${this.positionStoreKeyPrefix}X`, this.translate.x);
+        GM_setValue(`${this.positionStoreKeyPrefix}Y`, this.translate.y);
+        // オーバーレイを削除
+        elem(`#${this.draggingOverlayId}`)?.remove();
     }
 }

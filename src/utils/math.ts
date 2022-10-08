@@ -9,3 +9,14 @@ export const decToBin = (num: number): string => {
     }
     return '';
 };
+
+/**
+ * 数値を範囲内に丸める
+ * @param num
+ * @param min 最小値
+ * @param max 最大値
+ * @returns
+ */
+export const clamp = (num: number, min: number, max: number) => {
+    return Math.max(min, Math.min(num, max));
+};

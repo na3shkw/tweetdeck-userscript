@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         TweetDeck Custom
-// @version      1.0.0
+// @version      1.1.0
 // @description  TweetDeckをカスタマイズするユーザースクリプト
 // @author       na3shkw
 // @match        https://tweetdeck.twitter.com/
@@ -105,12 +105,16 @@ exports.BackByMousebutton = BackByMousebutton;
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Clock = void 0;
+const dom_1 = require("../utils/dom");
+const math_1 = require("../utils/math");
 class Clock {
     constructor() {
         this.clockSize = 200;
         this.color = '#355070';
         this.bigHandRatio = 0.8;
         this.shortHandRatio = 0.6;
+        this.draggingOverlayId = 'clock-dragging-overlay';
+        this.positionStoreKeyPrefix = 'clockPosition';
         this.container = null;
         this.bigHand = null;
         this.shortHand = null;
@@ -127,10 +131,10 @@ class Clock {
                 height: ${this.clockSize}px;
                 background-color: white;
                 border: solid 3px ${this.color};
-                border-radius: ${this.clockSize / 2}px;
+                border-radius: ${clockSizeHalf}px;
                 position: fixed;
-                top: 30px;
-                right: 30px;
+                top: 0;
+                left: 0;
                 z-index: 200;
                 opacity: 0.8;
                 transition: opacity 0.2s ease 0s;
@@ -139,7 +143,13 @@ class Clock {
                 opacity: 0.1;
                 cursor: move;
             }
-            .clock.drag {
+            .clock-dragging-overlay {
+                position: fixed;
+                width: 100vw;
+                height: 100vh;
+                top: 0;
+                left: 0;
+                z-index: 150;
                 cursor: move;
             }
             .clock-dial {
@@ -183,6 +193,9 @@ class Clock {
         if (this.container) {
             this.container.addEventListener('mousedown', this, false);
         }
+        this.translate.x = GM_getValue(`${this.positionStoreKeyPrefix}X`) || 0;
+        this.translate.y = GM_getValue(`${this.positionStoreKeyPrefix}Y`) || 0;
+        this.setClockPosition(this.translate.x, this.translate.y);
     }
     handleEvent(evt) {
         switch (evt.type) {
@@ -193,7 +206,6 @@ class Clock {
                 this.dragMove(evt);
                 break;
             case 'mouseup':
-            case 'mouseleave':
                 this.endMove();
                 break;
         }
@@ -234,11 +246,21 @@ class Clock {
     startMove(evt) {
         if (!this.evtOnMoveStart && this.container) {
             this.evtOnMoveStart = evt;
-            this.container.classList.add('drag');
-            this.container.addEventListener('mousemove', this, false);
-            this.container.addEventListener('mouseup', this, false);
-            this.container.addEventListener('mouseleave', this, false);
+            document.addEventListener('mousemove', this, false);
+            document.addEventListener('mouseup', this, false);
+            const overlay = document.createElement('div');
+            overlay.id = this.draggingOverlayId;
+            overlay.className = 'clock-dragging-overlay';
+            document.body.appendChild(overlay);
         }
+    }
+    setClockPosition(x, y) {
+        if (!this.container) {
+            return;
+        }
+        const translateX = (0, math_1.clamp)(x, 0, window.innerWidth - this.clockSize);
+        const translateY = (0, math_1.clamp)(y, 0, window.innerHeight - this.clockSize);
+        this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
     }
     dragMove(evt) {
         if (this.dragMoveTiemoutId || !this.evtOnMoveStart) {
@@ -251,27 +273,27 @@ class Clock {
             this.dragMoveTiemoutId = null;
             this.moveDelta.x = evt.clientX - this.evtOnMoveStart?.clientX;
             this.moveDelta.y = evt.clientY - this.evtOnMoveStart?.clientY;
-            const translateX = this.translate.x + this.moveDelta.x;
-            const translateY = this.translate.y + this.moveDelta.y;
-            this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+            this.setClockPosition(this.translate.x + this.moveDelta.x, this.translate.y + this.moveDelta.y);
         }, 10);
     }
     endMove() {
         if (!this.container) {
             return;
         }
-        this.container.classList.remove('drag');
         this.container.removeEventListener('mousemove', this, false);
         this.translate.x += this.moveDelta.x;
         this.translate.y += this.moveDelta.y;
         this.moveDelta.x = 0;
         this.moveDelta.y = 0;
         this.evtOnMoveStart = null;
+        GM_setValue(`${this.positionStoreKeyPrefix}X`, this.translate.x);
+        GM_setValue(`${this.positionStoreKeyPrefix}Y`, this.translate.y);
+        (0, dom_1.elem)(`#${this.draggingOverlayId}`)?.remove();
     }
 }
 exports.Clock = Clock;
 
-},{}],3:[function(require,module,exports){
+},{"../utils/dom":10,"../utils/math":11}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExcludeActivity = void 0;
@@ -723,7 +745,7 @@ exports.elems = elems;
 },{}],11:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decToBin = void 0;
+exports.clamp = exports.decToBin = void 0;
 const decToBin = (num) => {
     if (num >= 1) {
         return (0, exports.decToBin)(Math.floor(num / 2)) + (num % 2);
@@ -731,6 +753,10 @@ const decToBin = (num) => {
     return '';
 };
 exports.decToBin = decToBin;
+const clamp = (num, min, max) => {
+    return Math.max(min, Math.min(num, max));
+};
+exports.clamp = clamp;
 
 },{}],12:[function(require,module,exports){
 "use strict";
