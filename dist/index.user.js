@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         TweetDeck Custom
-// @version      1.1.0
+// @version      1.1.1
 // @description  TweetDeckをカスタマイズするユーザースクリプト
 // @author       na3shkw
 // @match        https://tweetdeck.twitter.com/
@@ -121,6 +121,7 @@ class Clock {
         this.evtOnMoveStart = null;
         this.dragMoveTiemoutId = null;
         this.translate = { x: 0, y: 0 };
+        this.translateTmp = { x: 0, y: 0 };
         this.moveDelta = { x: 0, y: 0 };
         const clockSizeHalf = this.clockSize / 2;
         const bigHandLength = clockSizeHalf * this.bigHandRatio;
@@ -243,6 +244,16 @@ class Clock {
             this.shortHand.style.transform = `translateX(-50%) rotate(${shortHandRotate}deg)`;
         }
     }
+    setClockPosition(x, y) {
+        if (!this.container) {
+            return;
+        }
+        const translateX = (0, math_1.clamp)(x, 0, window.innerWidth - this.clockSize);
+        const translateY = (0, math_1.clamp)(y, 0, window.innerHeight - this.clockSize);
+        this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+        this.translateTmp.x = translateX;
+        this.translateTmp.y = translateY;
+    }
     startMove(evt) {
         if (!this.evtOnMoveStart && this.container) {
             this.evtOnMoveStart = evt;
@@ -253,14 +264,6 @@ class Clock {
             overlay.className = 'clock-dragging-overlay';
             document.body.appendChild(overlay);
         }
-    }
-    setClockPosition(x, y) {
-        if (!this.container) {
-            return;
-        }
-        const translateX = (0, math_1.clamp)(x, 0, window.innerWidth - this.clockSize);
-        const translateY = (0, math_1.clamp)(y, 0, window.innerHeight - this.clockSize);
-        this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
     }
     dragMove(evt) {
         if (this.dragMoveTiemoutId || !this.evtOnMoveStart) {
@@ -281,10 +284,11 @@ class Clock {
             return;
         }
         this.container.removeEventListener('mousemove', this, false);
-        this.translate.x += this.moveDelta.x;
-        this.translate.y += this.moveDelta.y;
+        this.translate.x = this.translateTmp.x;
+        this.translate.y = this.translateTmp.y;
         this.moveDelta.x = 0;
         this.moveDelta.y = 0;
+        this.dragMoveTiemoutId = null;
         this.evtOnMoveStart = null;
         GM_setValue(`${this.positionStoreKeyPrefix}X`, this.translate.x);
         GM_setValue(`${this.positionStoreKeyPrefix}Y`, this.translate.y);

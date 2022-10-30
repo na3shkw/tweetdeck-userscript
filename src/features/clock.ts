@@ -15,6 +15,7 @@ export class Clock {
     private evtOnMoveStart: MouseEvent | null = null;
     private dragMoveTiemoutId: NodeJS.Timeout | null = null;
     private translate = { x: 0, y: 0 };
+    private translateTmp = { x: 0, y: 0 }; // ドラッグ中の時計の位置
     private moveDelta = { x: 0, y: 0 };
 
     constructor() {
@@ -160,6 +161,8 @@ export class Clock {
         const translateX = clamp(x, 0, window.innerWidth - this.clockSize);
         const translateY = clamp(y, 0, window.innerHeight - this.clockSize);
         this.container.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+        this.translateTmp.x = translateX;
+        this.translateTmp.y = translateY;
     }
 
     startMove(evt: MouseEvent) {
@@ -198,10 +201,11 @@ export class Clock {
             return;
         }
         this.container.removeEventListener('mousemove', this, false);
-        this.translate.x += this.moveDelta.x;
-        this.translate.y += this.moveDelta.y;
+        this.translate.x = this.translateTmp.x;
+        this.translate.y = this.translateTmp.y;
         this.moveDelta.x = 0;
         this.moveDelta.y = 0;
+        this.dragMoveTiemoutId = null;
         this.evtOnMoveStart = null;
         // 位置を保存
         GM_setValue(`${this.positionStoreKeyPrefix}X`, this.translate.x);

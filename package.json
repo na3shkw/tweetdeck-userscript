@@ -1,7 +1,7 @@
 {
   "name": "tweetdeck-userscript",
   "scriptName": "TweetDeck Custom",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "TweetDeckをカスタマイズするユーザースクリプト",
   "main": "index.ts",
   "scripts": {
